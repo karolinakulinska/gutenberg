@@ -21,6 +21,7 @@ jest.mock( '@wordpress/a11y', () => ( { speak: jest.fn() } ) );
 describe( 'ContrastChecker', () => {
 	const backgroundColor = '#ffffff';
 	const textColor = '#000000';
+	const linkColor = '#0040ff';
 	const isLargeText = true;
 	const fallbackBackgroundColor = '#fff';
 	const fallbackTextColor = '#000';
@@ -40,6 +41,7 @@ describe( 'ContrastChecker', () => {
 			<ContrastChecker
 				backgroundColor={ backgroundColor }
 				textColor={ textColor }
+				linkColor={ linkColor }
 				isLargeText={ isLargeText }
 				fallbackBackgroundColor={ fallbackBackgroundColor }
 				fallbackTextColor={ fallbackTextColor }
@@ -50,11 +52,51 @@ describe( 'ContrastChecker', () => {
 		expect( wrapper.html() ).toBeNull();
 	} );
 
-	test( 'should render component when the colors do not meet AA WCAG guidelines.', () => {
+	test( 'should render component when the text and background colors do not meet AA WCAG guidelines.', () => {
 		const wrapper = mount(
 			<ContrastChecker
 				backgroundColor={ sameShade }
 				textColor={ sameShade }
+				isLargeText={ isLargeText }
+				fallbackBackgroundColor={ fallbackBackgroundColor }
+				fallbackTextColor={ fallbackTextColor }
+			/>
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'This color combination may be hard for people to read.'
+		);
+		expect( wrapper.find( Notice ).children().text() ).toBe(
+			'This color combination may be hard for people to read. Try using a brighter background color and/or a darker text color.'
+		);
+	} );
+
+	test( 'should render component when the link and background colors do not meet AA WCAG guidelines.', () => {
+		const wrapper = mount(
+			<ContrastChecker
+				backgroundColor={ sameShade }
+				textColor={ textColor }
+				linkColor={ sameShade }
+				isLargeText={ isLargeText }
+				fallbackBackgroundColor={ fallbackBackgroundColor }
+				fallbackTextColor={ fallbackTextColor }
+			/>
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'This color combination may be hard for people to read.'
+		);
+		expect( wrapper.find( Notice ).children().text() ).toBe(
+			'This color combination may be hard for people to read. Try using a brighter background color and/or a darker text color.'
+		);
+	} );
+
+	test( 'should render component when the link and text and background colors do not meet AA WCAG guidelines.', () => {
+		const wrapper = mount(
+			<ContrastChecker
+				backgroundColor={ sameShade }
+				textColor={ sameShade }
+				linkColor={ sameShade }
 				isLargeText={ isLargeText }
 				fallbackBackgroundColor={ fallbackBackgroundColor }
 				fallbackTextColor={ fallbackTextColor }
@@ -89,6 +131,22 @@ describe( 'ContrastChecker', () => {
 			<ContrastChecker
 				backgroundColor={ sameShade }
 				textColor={ colorWithTransparency }
+				isLargeText={ isLargeText }
+				fallbackBackgroundColor={ fallbackBackgroundColor }
+				fallbackTextColor={ fallbackTextColor }
+			/>
+		);
+
+		expect( speak ).not.toHaveBeenCalled();
+		expect( wrapper.html() ).toBeNull();
+	} );
+
+	test( 'should render render null if link color contains a transparency', () => {
+		const wrapper = mount(
+			<ContrastChecker
+				backgroundColor={ backgroundColor }
+				textColor={ textColor }
+				linkColor={ colorWithTransparency }
 				isLargeText={ isLargeText }
 				fallbackBackgroundColor={ fallbackBackgroundColor }
 				fallbackTextColor={ fallbackTextColor }

@@ -18,11 +18,15 @@ extend( [ namesPlugin, a11yPlugin ] );
 function ContrastCheckerMessage( {
 	colordBackgroundColor,
 	colordTextColor,
+	colordLinkColor,
 	backgroundColor,
 	textColor,
+	linkColor,
 } ) {
+	const backgroundColorBrightness = colordBackgroundColor.brightness();
 	const msg =
-		colordBackgroundColor.brightness() < colordTextColor.brightness()
+		backgroundColorBrightness < colordTextColor.brightness() ||
+		backgroundColorBrightness < colordLinkColor.brightness()
 			? __(
 					'This color combination may be hard for people to read. Try using a darker background color and/or a brighter text color.'
 			  )
@@ -36,7 +40,7 @@ function ContrastCheckerMessage( {
 	// new color combination is selected and the contrast is still insufficient.
 	useEffect( () => {
 		speak( __( 'This color combination may be hard for people to read.' ) );
-	}, [ backgroundColor, textColor ] );
+	}, [ backgroundColor, textColor, linkColor ] );
 
 	return (
 		<div className="block-editor-contrast-checker">
@@ -55,33 +59,54 @@ function ContrastChecker( {
 	backgroundColor,
 	fallbackBackgroundColor,
 	fallbackTextColor,
+	fallbackLinkColor,
 	fontSize, // font size value in pixels
 	isLargeText,
 	textColor,
+	linkColor,
 } ) {
+	// @TODO Should background color or one of textColor or linkColor be required?
+	// @TODO Or should textColor be required and linkColor optional?
 	if (
 		! ( backgroundColor || fallbackBackgroundColor ) ||
 		! ( textColor || fallbackTextColor )
 	) {
 		return null;
 	}
+
 	const colordBackgroundColor = colord(
 		backgroundColor || fallbackBackgroundColor
 	);
-	const colordTextColor = colord( textColor || fallbackTextColor );
-	const hasTransparency =
-		colordBackgroundColor.alpha() !== 1 || colordTextColor.alpha() !== 1;
 
-	if (
-		hasTransparency ||
-		colordTextColor.isReadable( colordBackgroundColor, {
+	// @TODO we should have some logic that checks whether textColor or linkColor or both exist.
+	// @TODO If one or the other or both exist then the contrast checking logic needs to reflect it.
+	const colordTextColor = colord( textColor || fallbackTextColor );
+	const colordLinkColor = colord( linkColor || fallbackLinkColor );
+	const hasTransparency =
+		colordBackgroundColor.alpha() !== 1 ||
+		colordTextColor.alpha() !== 1 ||
+		colordLinkColor.alpha() !== 1;
+	const textSize =
+		isLargeText || ( isLargeText !== false && fontSize >= 24 )
+			? 'large'
+			: 'small';
+	const isTextColorReadable = colordTextColor.isReadable(
+		colordBackgroundColor,
+		{
 			level: 'AA',
-			size:
-				isLargeText || ( isLargeText !== false && fontSize >= 24 )
-					? 'large'
-					: 'small',
-		} )
-	) {
+			size: textSize,
+		}
+	);
+
+	const isLinkColorReadable = colordLinkColor.isReadable(
+		colordBackgroundColor,
+		{
+			level: 'AA',
+			size: textSize,
+		}
+	);
+
+	if ( hasTransparency || ( isTextColorReadable && isLinkColorReadable ) ) {
 		return null;
 	}
 
@@ -89,8 +114,10 @@ function ContrastChecker( {
 		<ContrastCheckerMessage
 			backgroundColor={ backgroundColor }
 			textColor={ textColor }
+			linkColor={ linkColor }
 			colordBackgroundColor={ colordBackgroundColor }
 			colordTextColor={ colordTextColor }
+			colordLinkColor={ colordLinkColor }
 		/>
 	);
 }
